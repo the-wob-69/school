@@ -1,0 +1,242 @@
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- CSC 343H5S: Lab 3
+-- Winter 2022 | University of Toronto Mississauga
+-- SKELETON FILE FOR SQL
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+-- ***** DO NOT CHANGE THE FORMAT *****
+-- ***** YOU MAY ONLY ADD WHERE *****
+-- *****  IT INDICATES TO DO SO *****
+
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- PREAMBLE
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- Parter 1's Name: [Yunkai Fan]
+-- Partner 1's Student Number: [1005088584]
+-- Partner 1's UtorID: [fanyunka]
+
+-- Parter 2's Name: [Tianshu Ni]
+-- Partner 2's Student Number: [1005682673]
+-- Partner 2's UtorID: [nitiansh]
+
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- BEGIN
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+-- ++++++++++++++++++++
+--  Q1
+-- ++++++++++++++++++++
+ 
+SELECT COUNT(*) as totalSeniors
+FROM Person
+WHERE DateOfBirth + '65 years'::interval <= '2019-11-14'::date;
+
+-- ++++++++++++++++++++
+--  Q2
+-- ++++++++++++++++++++ 
+    
+SELECT COUNT(*) as taken
+FROM Person
+WHERE Occupation = 'student' AND SIN IN (
+    SELECT SIN 
+    FROM Take LEFT OUTER JOIN Ship ON Take.ShipID = Ship.ShipID
+    WHERE RouteID = 1 AND Date = '2019-9-4'::date);
+
+-- ++++++++++++++++++++
+--  Q3.A
+-- ++++++++++++++++++++
+
+SELECT ShipID, Age, Manufacturer
+FROM Ship
+WHERE AdvertisingRevenue > 10000; 
+
+-- ++++++++++++++++++++
+--  Q3.B
+-- ++++++++++++++++++++
+
+SELECT FirstName, LastName, YearsOfService, ShipID
+FROM (Pilot LEFT OUTER JOIN Person ON Pilot.SIN=Person.SIN) 
+FULL OUTER JOIN Operate ON Pilot.SIN = Operate.SIN
+WHERE ShipID IN (SELECT ShipID
+    FROM Ship
+    WHERE AdvertisingRevenue IN (SELECT AdvertisingRevenue 
+        FROM Ship
+        WHERE AdvertisingRevenue > 10000
+        ORDER BY AdvertisingRevenue DESC
+        LIMIT 1));
+                     
+-- ++++++++++++++++++++
+--  Q3.C
+-- ++++++++++++++++++++
+
+SELECT RouteID, SUM(AdvertisingRevenue) as TotalRevenue
+FROM Ship
+GROUP BY RouteID
+ORDER BY TotalRevenue DESC;
+
+-- ++++++++++++++++++++
+--  Q4.A
+-- ++++++++++++++++++++
+
+SELECT Passenger.Type, SUM(Fare.Fee) as revenue
+FROM Passenger LEFT JOIN Fare ON Passenger.Type = Fare.Type
+GROUP BY Passenger.Type;
+
+-- ++++++++++++++++++++
+--  Q4.B
+-- ++++++++++++++++++++
+
+SELECT Passenger.Type, SUM(Fare.Fee) as revenue
+FROM Passenger LEFT JOIN Fare ON Passenger.Type = Fare.Type
+GROUP BY Passenger.Type
+HAVING SUM(Fee) > 500;
+
+-- ++++++++++++++++++++
+--  Q4.C
+-- ++++++++++++++++++++
+
+SELECT Temp.Type
+FROM (Take LEFT OUTER JOIN Passenger ON Passenger.SIN=Take.SIN) Temp LEFT OUTER JOIN Fare ON Temp.Type = Fare.Type
+WHERE date = '2019-9-1'::date
+GROUP BY Temp.Type
+HAVING SUM(Fee) >= ALL (SELECT SUM(Fee) 
+    FROM (Take LEFT OUTER JOIN Passenger ON Passenger.SIN=Take.SIN) Temp LEFT OUTER JOIN Fare ON Temp.Type = Fare.Type 
+    WHERE date = '2019-9-1'::date
+    GROUP BY Temp.Type);
+
+-- ++++++++++++++++++++
+--  Q5.A
+-- ++++++++++++++++++++
+
+SELECT Pilot.SIN, FirstName, LastName, (CURRENT_DATE - DateOfBirth) / 365 as Age
+FROM Pilot LEFT OUTER JOIN Person ON Pilot.SIN = Person.SIN
+WHERE Pilot.SIN IN (SELECT SIN 
+    FROM Infraction 
+    GROUP BY SIN 
+    HAVING COUNT(*) < 3);
+
+-- ++++++++++++++++++++
+--  Q5.B
+-- ++++++++++++++++++++
+
+SELECT SUM(Demerit), SUM(Fine) as totalFine
+FROM Infraction
+GROUP BY SIN
+HAVING SUM(Demerit) >= 2
+ORDER BY SUM(Demerit) DESC, totalFine DESC;
+
+-- ++++++++++++++++++++
+--  Q6.A
+-- ++++++++++++++++++++
+
+SELECT ShipID, Manufacturer
+FROM Ship
+WHERE Manufacturer IN (SELECT Manufacturer
+    FROM Ship
+    GROUP BY Manufacturer
+    HAVING COUNT(*) = 1);
+
+-- ++++++++++++++++++++
+--  Q6.B
+-- ++++++++++++++++++++
+
+SELECT A.RouteID,  COUNT(A.RouteID) as "number of times"
+FROM (SELECT Ship.RouteID
+    FROM Take, Ship
+    WHERE Take.Date='2019-09-07'::date AND Ship.ShipID = Take.ShipID) A
+    GROUP BY A.RouteID
+    ORDER BY COUNT(A.RouteID) DESC
+    LIMIT 1;
+
+-- ++++++++++++++++++++
+--  Q6.C
+-- ++++++++++++++++++++
+
+SELECT Date, COUNT(*) as "trips taken"
+FROM Take
+GROUP BY Date
+HAVING COUNT(*) >= ALL(SELECT COUNT(*)
+    FROM Take 
+    GROUP BY Date);
+
+-- ++++++++++++++++++++
+--  Q7.A
+-- ++++++++++++++++++++
+SELECT A.Occupation, COUNT(A.Occupation) as Occurrences
+FROM (SELECT DISTINCT Person.SIN, Schedule.Date, Person.Occupation
+    FROM Person, Schedule, Take, Ship
+    WHERE (Schedule.Date='2019-09-05'::date OR Schedule.Date='2019-09-06'::date) AND
+    Take.SIN = Person.SIN AND Take.Date= Schedule.Date AND
+    Ship.RouteID = Schedule.RouteID AND Take.ShipID=Ship.ShipID AND
+    Schedule.StopID in (SELECT StopID
+                    FROM Stop
+                    Where SIName LIKE '%Library')) A
+GROUP BY A.Occupation
+ORDER BY COUNT(A.Occupation) DESC;
+
+-- ++++++++++++++++++++
+--  Q7.B
+-- ++++++++++++++++++++
+
+(SELECT A.Occupation, A.Date, COUNT(A.Occupation) as Occurrences
+FROM (SELECT DISTINCT Person.SIN, Schedule.Date, Person.Occupation
+    FROM Person, Schedule, Take, Ship
+    WHERE (Schedule.Date='2019-09-05'::date ) AND
+    Take.SIN = Person.SIN AND Take.Date= Schedule.Date AND
+    Ship.RouteID = Schedule.RouteID AND Take.ShipID=Ship.ShipID AND
+    Schedule.StopID in (SELECT Stop.StopID
+                    FROM Stop, Sites
+                    Where Sites.Category LIKE '%Library' AND
+                    Sites.SIName=Stop.SIName
+                  )) A
+GROUP BY A.Date, A.Occupation
+ORDER BY COUNT(A.Occupation) DESC
+LIMIT 1
+)
+UNION
+(SELECT A.Occupation, A.Date, COUNT(A.Occupation) as Occurrences
+FROM (SELECT DISTINCT Person.SIN, Schedule.Date, Person.Occupation
+    FROM Person, Schedule, Take, Ship
+    WHERE (Schedule.Date='2019-09-06'::date) AND
+    Take.SIN = Person.SIN AND Take.Date= Schedule.Date AND
+    Ship.RouteID = Schedule.RouteID AND Take.ShipID=Ship.ShipID AND
+    Schedule.StopID in (SELECT Stop.StopID
+                    FROM Stop, Sites
+                    Where Sites.Category LIKE '%Library' AND
+                    Sites.SIName=Stop.SIName
+                  )) A
+GROUP BY A.Date, A.Occupation
+ORDER BY COUNT(A.Occupation) DESC
+LIMIT 1);
+
+-- ++++++++++++++++++++
+--  Q8
+-- ++++++++++++++++++++
+SELECT Person.FirstName, Person.LastName, Person.SIN
+FROM Pilot, Person, Infraction
+WHERE YearsOfService > 5 AND Salary > 75000 AND Pilot.SIN=Person.SIN AND Person.SIN=Infraction.SIN AND Demerit < 9;
+
+
+-- ++++++++++++++++++++
+--  Q9
+-- ++++++++++++++++++++
+SELECT FirstName, LastName, Sex, A.Number
+FROM (SELECT FirstName, LastName, Sex, Phone.Number, Person.SIN FROM Person LEFT OUTER JOIN Phone ON Person.SIN = Phone.SIN
+    WHERE Occupation = 'student') A INNER JOIN (SELECT SIN, Date, Time FROM Take LEFT OUTER JOIN Ship ON Take.ShipID = Ship.ShipID WHERE RouteID = 4) B
+    ON A.SIN = B.SIN;
+
+
+-- ++++++++++++++++++++
+--  Q10
+-- ++++++++++++++++++++
+SELECT Schedule.RouteID, Stop.SName, Schedule.ArrivalTime
+FROM Event, Schedule, Stop
+WHERE Event.EName='YG 4hunnid Concert' AND Event.SIName=Stop.SIName AND Schedule.StopID=Stop.StopID AND
+Schedule.ArrivalTime >= '16:00' AND
+Schedule.ArrivalTime <= '18:00' AND
+Schedule.Date='2019-09-06'::date
+ORDER BY Stop.SName ASC, Schedule.ArrivalTime ASC;
+
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- END
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

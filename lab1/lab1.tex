@@ -1,0 +1,104 @@
+\documentclass[12pt]{article}
+\usepackage{geometry}
+\geometry{letterpaper}
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{listings}
+\usepackage{fancyhdr}
+\usepackage{esvect}
+\usepackage{url}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{mathtools}
+\usepackage[thinc]{esdiff} 
+
+
+\begin{document}
+\begin{center}
+\begin{Large}
+  \textbf{CSC343 Lab1 }\\
+\end{Large}
+
+\begin{center}
+  \textsc{Yunkai Fan 1005088584 \vskip5pt}  
+  \textsc{Tianshu Ni 1005682673\vskip5pt} 
+\end{center}
+
+\begin{center}
+	Jan. 28, 2022
+\end{center} 
+\date{28 Jan 2022}
+\end{center}
+%\vspace{-.5in} 
+
+\begin{center}\textbf{Setup}\\\end{center}
+First import lab1.ddl, show Running Scripts of lab1.ddl. 
+\begin{center}\includegraphics[scale=.5
+]{lab1_Q1_2}\end{center}
+We could observe the structure of all of the tables: 
+\begin{center}\includegraphics[scale=.5
+]{lab1_Q1_1}\end{center}
+
+Then we show all the tables in the database.
+\begin{center}\includegraphics[scale=.8]{lab1_Q1_4}\end{center}
+The following image also shows all of their records.
+\begin{center}\includegraphics[scale=.8]{lab1_Q1_6}\end{center}
+After importing lab1\_drop.ddl, 
+\begin{center}\includegraphics[scale=.8]{lab1_Q1_5}\end{center}
+there exists no relations in the database.
+\begin{center}\includegraphics[scale=.9]{lab1_Q1_3}\end{center}
+
+\newpage
+\begin{center}\textbf{Database Independence}\\\end{center} 
+\begin{enumerate}
+    \item For the logical data independence of this database, when the records has been combined from duplicated records with different primary keys, the view into the database will remain the same.
+    
+    \item For the physical data independence of this database, when the database has been moving from physical storage, which has moved from Michael's local machine to the cloud service, the tables and records will not be affected, there will be no need to rewrite records or repeat the procedure of remove duplicates. In addition, while applying the LZMA algorithm to the database, the content of the database is lossless, and it is only the size of the database being changed (compressed).
+\end{enumerate}  
+
+
+\begin{center}\textbf{Keys and Referential Integrity}\\\end{center}
+
+\begin{enumerate}
+\item[2.] In this question, we will be making a few assumptions to the attributes of the tables from the database, and the following are the candidate keys:
+    %%%%% Candidate key %%%%%
+    \begin{itemize}
+    \item \textbf{Department}: the department id \textbf{did} is unique, and is the candidate key.
+    \item \textbf{Employee}: the employee identification number \textbf{eid}, and social insurance number \textbf{sin} are unique, and are the candidate keys.
+    \item \textbf{Providers}: the provider id \textbf{pid}, employer identification number \textbf{ein} are unique, and are the candidate keys.
+    \item \textbf{Customer}: the customer id \textbf{cid} is unique, and is the candidate key.
+    \item \textbf{Product}: the product id \textbf{productid} is unique, and is the candidate key.
+    \item \textbf{Warehousing}: since each product can only be stocked once per day, the combination of \textbf{\{data, productid\}} is unique, and is the candidate key.
+    \item \textbf{Promotion}: the promotion id \textbf{promotionid} is unique, and is the candidate key.
+    \item \textbf{Sale}: the sale id \textbf{sid}, and the receipt number \textbf{receipt\_num} are unique, and are the candidate keys.
+    \item \textbf{Receipt}: since each sale could contain multiple products, the combination of \textbf{\{receipt\_num, productid\}} is unique, and is the candidate key.
+    \end{itemize}
+    
+
+    \item[1.] All of the superkey of each relation (follwing assumptions from previous part):
+    \begin{itemize}
+    \item \textbf{Department}, the super key is \textbf{\{did\}} or \textbf{\{did, name\}}
+    \item \textbf{Employee}, the super key is any combination of attributes including \textbf{\{eid\}} or \textbf{\{sin\}}.
+    \item \textbf{Providers}, the super key is any combination of attributes including \textbf{\{pid\}} or \textbf{\{ein\}}.
+    \item \textbf{Customer}, the super key is any combination of attributes including \textbf{\{cid\}}.
+    \item \textbf{Product}, the super key is any combination of attributes including \textbf{\{productid\}}.
+    \item \textbf{Warehousing}, the super key is any combination of attributes including \textbf{\{date, productid\}}
+    \item \textbf{Promotion}, the super key is any combination of attributes including \textbf{\{promotionid\}}.
+    \item \textbf{Sale}, the super key is any combination of attributes including \textbf{\{sid\}} or \textbf{\{receipt\_num\}}.
+    \item \textbf{Receipt}, the super key is any combination of attributes including \textbf{\{receipt\_num, productid\}}.
+    \end{itemize}
+     
+    
+    %%%%% Foreign Key%%%%% 
+    \item[3.]  All of the foreign keys of each relation (follwing assumptions from previous parts):
+    \begin{itemize}
+    \item \textbf{Employee}: the foreign key is \textbf{did} from Department.
+    \item \textbf{Product}: the foreign key is \textbf{promotionid} from Promotion.
+    \item \textbf{Warehousing}: the foreign key is \textbf{productid} from Products, \textbf{pid} from Providers, and \textbf{eid} from Employee.
+    \item \textbf{Sale}: the foreign key is \textbf{eid} from Employee, \textbf{receipt\_num} from Recipt, and \textbf{cid} from Customer.
+    \item \textbf{Receipt}: the foreign key is \textbf{productid} from Product, and \textbf{sid} from Sale.
+    \end{itemize}
+    
+\end{enumerate}  
+\end{document}

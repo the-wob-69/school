@@ -1,0 +1,83 @@
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- CSC 343H5S: Lab 4
+-- Winter 2022 | University of Toronto Mississauga
+-- SKELETON FILE FOR TRIGGER/FUNCTION
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+-- ***** DO NOT CHANGE THE FORMAT *****
+-- ***** YOU MAY ONLY ADD WHERE *****
+-- *****  IT INDICATES TO DO SO *****
+
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- PREAMBLE
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- Parter 1's Name: [insert name]
+-- Partner 1's Student Number: [insert student number]
+-- Partner 1's UtorID: [insert University of Toronto Identifier]
+
+-- Parter 2's Name: [insert name]
+-- Partner 2's Student Number: [insert student number]
+-- Partner 2's UtorID: [insert University of Toronto Identifier]
+
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- DDL Additions
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+DROP TABLE IF EXISTS Earnings;
+DROP TRIGGER IF EXISTS insert_passenger_fare_trigger ON Take;
+DROP FUNCTION IF EXISTS insert_passenger_fare;
+CREATE TABLE IF NOT EXISTS Earnings(
+    Type varchar(20) NOT NULL, 
+    TotalEarnings decimal(10,2)
+);
+
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- BEGIN
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+-- ++++++++++++++++++++
+--  Function
+-- ++++++++++++++++++++
+
+CREATE FUNCTION insert_passenger_fare()
+    RETURNS TRIGGER AS $insert_passenger_fare_trigger$
+    DECLARE TempType varchar(20);
+    DECLARE TempEarning decimal(10,2);
+    DECLARE TempTotalEarnings decimal(10,2);
+    DECLARE cnt integer;
+
+    BEGIN
+        TempType := (SELECT Passenger.Type
+        FROM Passenger LEFT JOIN Fare ON Passenger.Type = Fare.Type
+        WHERE SIN = NEW.SIN);
+
+        TempEarning := (SELECT Fee
+        FROM Passenger LEFT JOIN Fare ON Passenger.Type = Fare.Type
+        WHERE SIN = NEW.SIN);
+
+        cnt := (SELECT COUNT(*)
+        FROM Earnings WHERE Type = TempType);
+
+        IF (cnt = 0) THEN
+            INSERT INTO Earnings (Type, TotalEarnings) VALUES (TempType, TempEarning);
+
+        ELSEIF (cnt <> 0) THEN
+            TempTotalEarnings := (SELECT TotalEarnings FROM Earnings WHERE Type = TempType);
+            UPDATE Earnings SET TotalEarnings = TempTotalEarnings + TempEarning WHERE Type = TempType;
+
+        END IF;
+        RETURN NEW;
+    END;
+
+    $insert_passenger_fare_trigger$ LANGUAGE PLPGSQL;
+
+-- ++++++++++++++++++++
+--  Trigger
+-- ++++++++++++++++++++
+
+CREATE TRIGGER insert_passenger_fare_trigger
+    AFTER INSERT ON Take
+FOR EACH ROW EXECUTE PROCEDURE insert_passenger_fare();
+
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- END
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
